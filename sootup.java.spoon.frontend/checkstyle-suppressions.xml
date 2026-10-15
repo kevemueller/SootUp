@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN" "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+	<suppress checks="Indentation" />
+	<suppress checks="MissingJavadocMethod" />
+	<suppress files=".*/ll/.*\.java" checks=".*"/>
+	<suppress files=".*BodyAligner.java" checks=".*"/>
+</suppressions>

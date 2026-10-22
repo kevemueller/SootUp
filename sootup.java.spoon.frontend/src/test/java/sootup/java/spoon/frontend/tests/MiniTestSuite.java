@@ -7,7 +7,6 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DynamicContainer;

@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -39,7 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sootup.core.inputlocation.AnalysisInputLocation;
-import sootup.core.jimple.visitor.Acceptor;
 import sootup.core.model.Body;
 import sootup.core.model.ClassModifier;
 import sootup.core.model.FieldModifier;
@@ -54,7 +54,7 @@ import sootup.java.core.JavaSootField;
 import sootup.java.core.JavaSootMethod;
 import sootup.java.core.views.JavaView;
 import sootup.java.spoon.frontend.inputlocation.SpoonModelAnalysisInputLocation;
-import sootup.java.spoon.frontend.util.JimpleScanner;
+import sootup.java.spoon.frontend.util.DebugScanner;
 import sootup.java.spoon.frontend.util.SpoonUtil;
 import sootup.jimple.frontend.JimpleAnalysisInputLocation;
 import spoon.Launcher;
@@ -68,40 +68,6 @@ import spoon.reflect.visitor.ModelConsistencyChecker;
  * @author Keve Müller
  */
 public abstract class AbstractTestFrontend {
-  protected static final class DebugScanner extends JimpleScanner {
-    final String indent = " ".repeat(42);
-    int indentLevel = 0;
-
-    final Appendable out;
-
-    public DebugScanner(final Appendable out) {
-      this.out = out;
-    }
-
-    @Override
-    protected void enter(final Acceptor<?> acceptor) {
-      try {
-        out.append("%s->%s//%s\n".formatted(indent.substring(0, indentLevel),
-            acceptor.getClass().getSimpleName(), acceptor));
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      } finally {
-        indentLevel++;
-      }
-    }
-
-    @Override
-    protected void exit(final Acceptor<?> acceptor) {
-      indentLevel--;
-      try {
-        out.append("%s<-%s\n".formatted(indent.substring(0, indentLevel),
-            acceptor.getClass().getSimpleName()));
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    }
-  }
-
   private static final Logger LOG = LoggerFactory.getLogger(AbstractTestFrontend.class);
 
   protected Launcher launcher;

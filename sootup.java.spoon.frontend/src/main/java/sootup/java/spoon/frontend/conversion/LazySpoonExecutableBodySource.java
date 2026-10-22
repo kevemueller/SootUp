@@ -20,6 +20,8 @@ import sootup.core.signatures.MethodSignature;
 import sootup.core.views.View;
 import sootup.java.core.JavaIdentifierFactory;
 import sootup.java.core.views.JavaView;
+import sootup.java.spoon.frontend.interceptors.GotoRemover;
+import sootup.java.spoon.frontend.interceptors.NopRemover;
 import spoon.reflect.declaration.CtElement;
 import spoon.reflect.declaration.CtExecutable;
 
@@ -84,6 +86,11 @@ public class LazySpoonExecutableBodySource implements BodySource {
     }
 
     try {
+      // first run our mandatory cleanup 
+      new NopRemover().interceptBody(bodyBuilder, view);
+      new GotoRemover().interceptBody(bodyBuilder, view);
+
+      // then anything the user configured
       for (final BodyInterceptor bodyInterceptor : bodyInterceptors) {
         bodyInterceptor.interceptBody(bodyBuilder, view);
       }

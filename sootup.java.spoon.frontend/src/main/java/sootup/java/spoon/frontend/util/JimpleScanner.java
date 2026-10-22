@@ -1,9 +1,13 @@
 package sootup.java.spoon.frontend.util;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.jspecify.annotations.NonNull;
 
+import sootup.core.graph.BasicBlock;
+import sootup.core.graph.ControlFlowGraph;
 import sootup.core.jimple.common.Local;
 import sootup.core.jimple.common.Value;
 import sootup.core.jimple.common.constant.BooleanConstant;
@@ -74,7 +78,6 @@ import sootup.core.jimple.javabytecode.stmt.JEnterMonitorStmt;
 import sootup.core.jimple.javabytecode.stmt.JExitMonitorStmt;
 import sootup.core.jimple.javabytecode.stmt.JRetStmt;
 import sootup.core.jimple.javabytecode.stmt.JSwitchStmt;
-import sootup.core.jimple.visitor.Acceptor;
 import sootup.core.jimple.visitor.StmtVisitor;
 import sootup.core.jimple.visitor.TypeVisitor;
 import sootup.core.jimple.visitor.ValueVisitor;
@@ -94,7 +97,7 @@ import sootup.core.types.Type;
 import sootup.core.types.UnknownType;
 import sootup.core.types.VoidType;
 
-public class JimpleScanner implements StmtVisitor, ValueVisitor, TypeVisitor {
+public class JimpleScanner<T> implements StmtVisitor, ValueVisitor, TypeVisitor {
 
   @Override
   public void caseAddExpr(final JAddExpr expr) {
@@ -137,6 +140,20 @@ public class JimpleScanner implements StmtVisitor, ValueVisitor, TypeVisitor {
     scan(stmt.getLeftOp());
     scan(stmt.getRightOp());
     exit(stmt);
+  }
+
+  public void caseBasicBlock(final BasicBlock<?> basicBlock) {
+    enter(basicBlock);
+    scan(basicBlock.getStmts());
+    exit(basicBlock);
+  }
+
+  public void caseControlFlowGraph(final ControlFlowGraph<?> controlFlowGraph) {
+    enter(controlFlowGraph);
+    scanBlocks(controlFlowGraph.getBlocks());
+//    controlFlowGraph.getStmts().stream().map(s -> Map.entry(s, controlFlowGraph.successors(s)))
+//        .forEach(p -> caseEdge(p.getKey(), p.getValue()));
+    exit(controlFlowGraph);
   }
 
   @Override
@@ -740,44 +757,79 @@ public class JimpleScanner implements StmtVisitor, ValueVisitor, TypeVisitor {
   @Override
   public void defaultCaseValue(@NonNull final Value v) {
     // see https://github.com/soot-oss/SootUp/issues/1784
-    // enterValue(v);
+    enter(v);
     scan(v.getType());
-    // exitValue(v);
+    exit(v);
   }
 
-  public void scan(final List<? extends Stmt> stmts) {
+  protected T scanResult() {
+    return null;
+  }
+
+  public T scan(final BasicBlock<?> basicBlock) {
+    caseBasicBlock(basicBlock);
+    return scanResult();
+  }
+
+  public T scan(final ControlFlowGraph<?> controlFlowGraph) {
+    caseControlFlowGraph(controlFlowGraph);
+    return scanResult();
+  }
+
+  public T scan(final List<? extends Stmt> stmts) {
     for (final Stmt stmt : stmts) {
       scan(stmt);
     }
+    return scanResult();
   }
 
-  public void scanValues(final List<? extends Value> values) {
-    for (final Value value : values) {
-      scan(value);
-    }
-  }
-
-  protected void enter(final Acceptor<?> acceptor) {
-  }
-
-  protected void exit(final Acceptor<?> acceptor) {
-  }
-
-  protected void scan(final Value op) {
-    op.accept(this);
-  }
-
-  private void scan(final Stmt stmt) {
+  public T scan(final Stmt stmt) {
     stmt.accept(this);
+    return scanResult();
   }
 
-  private void scan(final Type type) {
+  public T scan(final Type type) {
     type.accept(this);
+    return scanResult();
   }
 
-  private void scanTypes(final List<? extends Type> types) {
+  public T scan(final Value op) {
+    op.accept(this);
+    return scanResult();
+  }
+
+  public T scanTypes(final List<? extends Type> types) {
     for (final Type type : types) {
       scan(type);
     }
+    return scanResult();
+
+  }
+
+  public T scanValues(final List<? extends Value> values) {
+    for (final Value value : values) {
+      scan(value);
+    }
+    return scanResult();
+
+  }
+
+  public T scanBlocks(final Collection<? extends BasicBlock<?>> blocks) {
+    for (final BasicBlock<?> value : blocks) {
+      scan(value);
+    }
+    return scanResult();
+  }
+
+  public void caseEdge(Stmt stmt, List<Stmt> successors) {
+    enter(stmt);
+    // we do not scan the successors as that would lead to an infinite loop
+    exit(stmt);
+  }
+
+  protected void enter(final Object element) {
+  }
+
+  protected void exit(final Object element) {
   }
 }

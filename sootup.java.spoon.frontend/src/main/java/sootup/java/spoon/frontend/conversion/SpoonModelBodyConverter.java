@@ -1222,50 +1222,8 @@ public class SpoonModelBodyConverter extends CtScanner implements SpoonConverter
       });
     }
 
-    // remove NOP glue, we first collect everything into a list, then run the
-    // remover to avoid racing on the iteration
-    controlFlowGraph.getNodes().stream().filter(Stmt::isJNopStmt).toList()
-        .forEach(controlFlowGraph::removeNode);
 
-    // remove redundant goto
-    // FIXME: rework this
 
-    List<BasicBlock<?>> blocks = new ArrayList<>(controlFlowGraph.getBlocksSorted());
-    for (int i = 0; i < blocks.size() - 1; i++) {
-      BasicBlock<?> singleBlock = blocks.get(i);
-      Stmt jiBlockTail = singleBlock.getTail();
-      List<? extends BasicBlock<?>> blockSuccessors = singleBlock.getSuccessors();
-      if (!(jiBlockTail instanceof JGotoStmt jiSingleGoto) || 1 != blockSuccessors.size()) {
-        continue;
-      }
-      BasicBlock<?> blockSuccessor = blockSuccessors.get(0);
-      // basicblock with a single goto statement
-      if (singleBlock.getHead().equals(jiBlockTail)) {
-        BasicBlock<?> blockPredecessor = singleBlock.getPredecessors().get(0);
-        if (blockPredecessor.getTail() instanceof JIfStmt jiPrecedingIf
-            && blockPredecessor.getSuccessors().indexOf(singleBlock) == JIfStmt.TRUE_BRANCH_IDX
-            && 1 == singleBlock.getPredecessors().size()
-            && singleBlock.getSuccessors().get(0) == blocks.get(i + 1)) {
-          LOG.debug("Removing transitive single {} at {} new target is {}", jiSingleGoto,
-              jiPrecedingIf, blockSuccessor.getHead());
-          controlFlowGraph.removeEdge(jiPrecedingIf, jiSingleGoto);
-          controlFlowGraph.putEdge(jiPrecedingIf, JIfStmt.TRUE_BRANCH_IDX,
-              blockSuccessor.getHead());
-          controlFlowGraph.removeBlock(singleBlock);
-        }
-        continue;
-      }
-      // basicblock with a single successor branching to the next in sort-order
-      // basicblock and that basic block has only (this) single predecessor
-      BasicBlock<?> nextBlock = blocks.get(i + 1);
-      if (blockSuccessor == nextBlock && 1 == nextBlock.getPredecessors().size()) {
-        // remove the goto which will join the two basicblocks
-        LOG.debug("Joining basicblocks at {}", jiSingleGoto.getPositionInfo());
-        controlFlowGraph.removeNode(jiSingleGoto, true);
-        continue;
-      }
-
-    }
 
     // System.out.println("EntryPoints");
     // controlFlowGraph.getEntrypoints().forEach(System.out::println);
